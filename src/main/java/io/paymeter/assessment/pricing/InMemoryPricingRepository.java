@@ -1,11 +1,8 @@
 package io.paymeter.assessment.pricing;
 
-import org.springframework.stereotype.Repository;
-
 import java.util.Map;
 import java.util.Optional;
 
-@Repository
 public class InMemoryPricingRepository implements PricingRepository {
     private static final String PARKING_DAILY_CAP = "P000123";
     private static final String PARKING_FREE_HOUR = "P000456";

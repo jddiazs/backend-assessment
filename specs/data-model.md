@@ -4,21 +4,23 @@ This document describes the data model for the LTI (Learning Tracking Initiative
 
 ## Model Descriptions
 
-### 1. Customer
-Represents a customer and their parking pricing configuration
+### 1. pricing
+Represents the parking pricing to each customer
 
 **Fields:**
-- `parkingId:`: Unique identifier for the customer (Primary Key)
-- `hourlyPrice`: Hourly price
+- `parkingId:`: Unique identifier for the pricing (Primary Key)
+- `hourlyRateInCents`: Hourly price
+- `capInCents`:  This is the maximum charge per time window (in cents). For example: if capInCents = 1500 and the window (capWindowHours) is 24 hours, you will never charge more than  15.00 EUR per 24-hour block, even if the total number of hours exceeds this amount
 - `firstHourFree`: Determines if the first hour of parking is free.
-- `timeWindow` Sets the maximum number of hours before full charge applies.
+- `capWindowHours` Determines the time window for applying maximum charge.
 
 
 **Validation Rules:**
 - parkingId must be unique and must be string
-- hourly Price must be unique and must be double
+- hourlyRateInCents   must be double
+- capInCents is required
 - firstHourFree default is false
-- timeWindow only allow 12 or 24 
+- capWindowHours only allow 12 or 24 
 
 
 ## Entity Relationship Diagram
@@ -27,9 +29,10 @@ Represents a customer and their parking pricing configuration
 erDiagram
     Customer {
         String parkingId PK
-        Float hourlyPrice
+        Int hourlyRateInCents
+        Int capInCents
         boolean firstHourFree
-        Int timeWindow
+        Int capWindowHours
     }
    
 ```

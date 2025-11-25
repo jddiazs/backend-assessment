@@ -34,6 +34,9 @@ To run the application, run the following command in a terminal window:
 
 # using docker
 docker build -t app . && docker run -it -p 8080:8080 app
+
+# using docker compose (app + postgres seeded)
+docker compose up --build
 ```
 
 Check service is running:
@@ -48,7 +51,15 @@ Execute the following command to test the application:
 
 # using docker
 docker run --rm -u gradle -v "$PWD":/home/gradle/project -w /home/gradle/project gradle:8-jdk17 gradle test
+
+# with docker compose (uses H2 for tests, Postgres for runtime)
+docker compose exec app ./gradlew test
 ```
+
+### Notes for docker compose
+- Postgres 13 se levanta con `db/init/001_create_pricing.sql`, creando la tabla `pricing` y los dos registros iniciales (P000123, P000456).
+- El servicio `app` se construye con el `Dockerfile` y se conecta al servicio `db` usando las variables `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`.
+- Para bajar los contenedores: `docker compose down`.
 
 ## Challenge
 
