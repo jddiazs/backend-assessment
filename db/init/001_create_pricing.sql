@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS pricing (
 );
 
 INSERT INTO pricing (parking_id, hourly_rate_in_cents, cap_in_cents, first_hour_free, cap_window_hours) VALUES
-    ('P000123', 200, 1500, FALSE, 24),
-    ('P000456', 300, 2000, TRUE, 12);
+    ('P000123', 2, 15, FALSE, 24),
+    ('P000456', 3, 20, TRUE, 12)
+;

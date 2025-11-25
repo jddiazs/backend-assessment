@@ -25,41 +25,164 @@ We will especially consider:
 * Readability
 * Actually solving the problem
 
-## Instructions
+## Deployment Guide
 
-To run the application, run the following command in a terminal window:
+### Prerequisites
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Java | 17+ | Required for manual deployment |
+| Gradle | 8.x | Included via wrapper (`./gradlew`) |
+| Docker | 20.10+ | Required for containerized deployment |
+| Docker Compose | 2.x | Required for full stack deployment |
+| PostgreSQL | 13+ | Only for manual deployment (Docker Compose includes it) |
+
+---
+
+### Option 1: Docker Compose (Recommended)
+
+This is the easiest way to run the full stack (application + PostgreSQL database with seed data).
+
+#### Start the application
+
 ```shell
-# java 17 in host
-./gradlew bootRun
-
-# using docker
-docker build -t app . && docker run -it -p 8080:8080 app
-
-# using docker compose (app + postgres seeded)
 docker compose up --build
 ```
 
-Check service is running:
+This command will:
+1. Build the application using Gradle inside a container
+2. Start PostgreSQL 13 with the `parking` database
+3. Execute `db/init/001_create_pricing.sql` to create the `pricing` table and seed data
+4. Start the Spring Boot application connected to the database
+
+#### Stop the application
+
 ```shell
-curl http://localhost:8080
+docker compose down
 ```
 
-Execute the following command to test the application:
+#### View logs
+
 ```shell
-# java 17 in host
+# All services
+docker compose logs -f
+
+# Only the application
+docker compose logs -f app
+
+# Only the database
+docker compose logs -f db
+```
+
+#### Environment Variables (docker-compose.yml)
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `POSTGRES_DB` | `parking` | Database name |
+| `POSTGRES_USER` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://db:5432/parking` | JDBC connection URL |
+| `SPRING_DATASOURCE_USERNAME` | `postgres` | Spring datasource user |
+| `SPRING_DATASOURCE_PASSWORD` | `postgres` | Spring datasource password |
+
+#### Exposed Ports
+
+| Service | Port | Description |
+|---------|------|-------------|
+| app | 8080 | HTTP API |
+| db | 5432 | PostgreSQL |
+
+---
+
+### Option 2: Docker Only (Without Compose)
+
+Build and run the application container manually. Requires an external PostgreSQL database.
+
+```shell
+# Build the image
+docker build -t app .
+
+# Run the container (configure your database connection)
+docker run -it -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/parking \
+  -e SPRING_DATASOURCE_USERNAME=postgres \
+  -e SPRING_DATASOURCE_PASSWORD=postgres \
+  app
+```
+
+---
+
+### Option 3: Manual Deployment (Local Development)
+
+#### Prerequisites
+- Java 17 installed and configured (`JAVA_HOME`)
+- PostgreSQL 13+ running locally with:
+  - Database: `parking` (or configure via environment variables)
+  - Execute `db/init/001_create_pricing.sql` to create schema and seed data
+
+#### Start the application
+
+```shell
+# Using Gradle wrapper (recommended)
+./gradlew bootRun
+
+# Or with custom database configuration
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/parking \
+SPRING_DATASOURCE_USERNAME=postgres \
+SPRING_DATASOURCE_PASSWORD=postgres \
+./gradlew bootRun
+```
+
+#### Build the JAR
+
+```shell
+./gradlew clean build
+```
+
+The JAR file will be generated at: `build/libs/assessment-0.0.1-SNAPSHOT.jar`
+
+#### Run the JAR directly
+
+```shell
+java -jar build/libs/assessment-0.0.1-SNAPSHOT.jar
+```
+
+---
+
+### Running Tests
+
+```shell
+# Local (uses H2 in-memory database)
 ./gradlew test
 
-# using docker
+# Using Docker
 docker run --rm -u gradle -v "$PWD":/home/gradle/project -w /home/gradle/project gradle:8-jdk17 gradle test
 
-# with docker compose (uses H2 for tests, Postgres for runtime)
-docker compose exec app ./gradlew test
+# Inside running Docker Compose environment
+docker compose exec app gradle test
 ```
 
-### Notes for docker compose
-- Postgres 13 se levanta con `db/init/001_create_pricing.sql`, creando la tabla `pricing` y los dos registros iniciales (P000123, P000456).
-- El servicio `app` se construye con el `Dockerfile` y se conecta al servicio `db` usando las variables `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`.
-- Para bajar los contenedores: `docker compose down`.
+---
+
+### Verify the Application is Running
+
+```shell
+# Health check
+curl http://localhost:8080
+
+# Expected response: ok
+```
+
+---
+
+### Database Seed Data
+
+The `db/init/001_create_pricing.sql` script creates the following parking configurations:
+
+| parking_id | hourly_rate | max_cap | cap_window | first_hour_free |
+|------------|-------------|---------|------------|-----------------|
+| P000123 | 2 EUR | 15 EUR | 24 hours | No |
+| P000456 | 3 EUR | 20 EUR | 12 hours | Yes |
 
 ## Challenge
 
