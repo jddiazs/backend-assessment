@@ -1,5 +1,6 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.infrastructure.persistence.pricing;
 
+import io.paymeter.assessment.domain.pricing.Pricing;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -7,7 +8,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "pricing")
-class PricingEntity {
+public class PricingEntity {
 
     @Id
     @Column(name = "parking_id", nullable = false, updatable = false)

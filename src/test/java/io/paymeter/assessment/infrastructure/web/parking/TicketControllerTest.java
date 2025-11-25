@@ -1,7 +1,7 @@
-package io.paymeter.assessment.parking;
+package io.paymeter.assessment.infrastructure.web.parking;
 
-import io.paymeter.assessment.pricing.Money;
-import io.paymeter.assessment.pricing.PricingService;
+import io.paymeter.assessment.application.pricing.PricingService;
+import io.paymeter.assessment.domain.pricing.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

@@ -1,7 +1,11 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.application.pricing;
 
-import io.paymeter.assessment.parking.BadRequestException;
-import io.paymeter.assessment.parking.NotFoundException;
+import io.paymeter.assessment.application.shared.BadRequestException;
+import io.paymeter.assessment.application.shared.NotFoundException;
+import io.paymeter.assessment.domain.pricing.Money;
+import io.paymeter.assessment.domain.pricing.Pricing;
+import io.paymeter.assessment.domain.pricing.PricingCalculator;
+import io.paymeter.assessment.domain.pricing.PricingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

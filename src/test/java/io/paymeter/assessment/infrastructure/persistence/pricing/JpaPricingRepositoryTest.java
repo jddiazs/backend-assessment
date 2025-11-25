@@ -1,5 +1,6 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.infrastructure.persistence.pricing;
 
+import io.paymeter.assessment.domain.pricing.Pricing;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

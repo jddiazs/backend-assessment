@@ -1,4 +1,4 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.infrastructure.persistence.pricing;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

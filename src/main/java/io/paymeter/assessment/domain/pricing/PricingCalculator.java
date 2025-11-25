@@ -1,24 +1,21 @@
-package io.paymeter.assessment.pricing;
-
-import org.springframework.stereotype.Component;
+package io.paymeter.assessment.domain.pricing;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
 
-    @Component
-    public class PricingCalculator {
+public class PricingCalculator {
 
-        public Money calculate(Pricing pricing, ZonedDateTime from, ZonedDateTime to) {
-            if (to.isBefore(from)) {
-                throw new IllegalArgumentException("End time must be after start time");
-            }
-            long durationMinutes = Duration.between(from, to).toMinutes();
-            if (durationMinutes < 1) {
-                return Money.zero();
-            }
-            if (pricing.getCapWindowHours() <= 0) {
-                throw new IllegalArgumentException("Cap window hours must be positive");
-            }
+    public Money calculate(Pricing pricing, ZonedDateTime from, ZonedDateTime to) {
+        if (to.isBefore(from)) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+        long durationMinutes = Duration.between(from, to).toMinutes();
+        if (durationMinutes < 1) {
+            return Money.zero();
+        }
+        if (pricing.getCapWindowHours() <= 0) {
+            throw new IllegalArgumentException("Cap window hours must be positive");
+        }
 
         boolean freeHourAvailable = pricing.isFirstHourFree();
         ZonedDateTime windowStart = from;

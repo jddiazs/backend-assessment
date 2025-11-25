@@ -1,4 +1,4 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.domain.pricing;
 
 public class Pricing {
     private final int hourlyRateInCents;

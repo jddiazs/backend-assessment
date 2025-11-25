@@ -1,4 +1,4 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.domain.pricing;
 
 import java.util.Optional;
 

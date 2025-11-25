@@ -1,5 +1,7 @@
-package io.paymeter.assessment.pricing;
+package io.paymeter.assessment.infrastructure.persistence.pricing;
 
+import io.paymeter.assessment.domain.pricing.Pricing;
+import io.paymeter.assessment.domain.pricing.PricingRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
