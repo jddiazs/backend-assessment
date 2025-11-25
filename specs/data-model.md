@@ -49,10 +49,3 @@ erDiagram
 
 5. **Data Normalization**: The model follows database normalization principles to minimize redundancy and ensure data integrity.
 
-## Notes
-
-- All `id` fields serve as primary keys with auto-increment functionality
-- Foreign key relationships maintain referential integrity
-- Optional fields allow for flexible data entry while maintaining required core information
-- The interview system supports multi-step hiring processes with different types of interviews
-- Email fields have unique constraints to prevent duplicate accounts 
