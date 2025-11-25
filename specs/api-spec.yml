@@ -1,0 +1,99 @@
+openapi: 3.0.1
+info:
+  title: Paymeter Parking Pricing API
+  version: "1.0.0"
+paths:
+  /tickets/calculate:
+    post:
+      summary: Calculate parking ticket price
+      description: Returns the duration and price for a parking stay using rules per parking lot.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - parkingId
+                - from
+              properties:
+                parkingId:
+                  type: string
+                  description: Parking identifier (e.g., P000123).
+                from:
+                  type: string
+                  format: date-time
+                  description: Start timestamp (ISO 8601, supports UTC default when no zone is provided).
+                to:
+                  type: string
+                  format: date-time
+                  description: Optional end timestamp; defaults to current time if omitted.
+            examples:
+              valid:
+                summary: Calculate with default end time
+                value:
+                  parkingId: P000123
+                  from: 2024-02-27T09:00:00Z
+      responses:
+        "200":
+          description: Calculation succeeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parkingId:
+                    type: string
+                  from:
+                    type: string
+                    format: date-time
+                  to:
+                    type: string
+                    format: date-time
+                  duration:
+                    type: integer
+                    format: int64
+                    description: Duration in minutes.
+                  price:
+                    type: string
+                    description: Price formatted as cents plus currency code (e.g., 235EUR).
+              examples:
+                response:
+                  summary: Successful calculation
+                  value:
+                    parkingId: P000123
+                    from: 2024-02-27T09:00:00Z
+                    to: 2024-02-27T10:00:00Z
+                    duration: 60
+                    price: 200EUR
+        "400":
+          description: Validation error (missing fields, invalid dates, from/to ordering)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Parking not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+          enum: [BAD_REQUEST, NOT_FOUND, INTERNAL_ERROR]
+        status:
+          type: integer
+          format: int32

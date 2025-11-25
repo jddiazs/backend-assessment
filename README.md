@@ -25,30 +25,164 @@ We will especially consider:
 * Readability
 * Actually solving the problem
 
-## Instructions
+## Deployment Guide
 
-To run the application, run the following command in a terminal window:
+### Prerequisites
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Java | 17+ | Required for manual deployment |
+| Gradle | 8.x | Included via wrapper (`./gradlew`) |
+| Docker | 20.10+ | Required for containerized deployment |
+| Docker Compose | 2.x | Required for full stack deployment |
+| PostgreSQL | 13+ | Only for manual deployment (Docker Compose includes it) |
+
+---
+
+### Option 1: Docker Compose (Recommended)
+
+This is the easiest way to run the full stack (application + PostgreSQL database with seed data).
+
+#### Start the application
+
 ```shell
-# java 17 in host
+docker compose up --build
+```
+
+This command will:
+1. Build the application using Gradle inside a container
+2. Start PostgreSQL 13 with the `parking` database
+3. Execute `db/init/001_create_pricing.sql` to create the `pricing` table and seed data
+4. Start the Spring Boot application connected to the database
+
+#### Stop the application
+
+```shell
+docker compose down
+```
+
+#### View logs
+
+```shell
+# All services
+docker compose logs -f
+
+# Only the application
+docker compose logs -f app
+
+# Only the database
+docker compose logs -f db
+```
+
+#### Environment Variables (docker-compose.yml)
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `POSTGRES_DB` | `parking` | Database name |
+| `POSTGRES_USER` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://db:5432/parking` | JDBC connection URL |
+| `SPRING_DATASOURCE_USERNAME` | `postgres` | Spring datasource user |
+| `SPRING_DATASOURCE_PASSWORD` | `postgres` | Spring datasource password |
+
+#### Exposed Ports
+
+| Service | Port | Description |
+|---------|------|-------------|
+| app | 8080 | HTTP API |
+| db | 5432 | PostgreSQL |
+
+---
+
+### Option 2: Docker Only (Without Compose)
+
+Build and run the application container manually. Requires an external PostgreSQL database.
+
+```shell
+# Build the image
+docker build -t app .
+
+# Run the container (configure your database connection)
+docker run -it -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/parking \
+  -e SPRING_DATASOURCE_USERNAME=postgres \
+  -e SPRING_DATASOURCE_PASSWORD=postgres \
+  app
+```
+
+---
+
+### Option 3: Manual Deployment (Local Development)
+
+#### Prerequisites
+- Java 17 installed and configured (`JAVA_HOME`)
+- PostgreSQL 13+ running locally with:
+  - Database: `parking` (or configure via environment variables)
+  - Execute `db/init/001_create_pricing.sql` to create schema and seed data
+
+#### Start the application
+
+```shell
+# Using Gradle wrapper (recommended)
 ./gradlew bootRun
 
-# using docker
-docker build -t app . && docker run -it -p 8080:8080 app
+# Or with custom database configuration
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/parking \
+SPRING_DATASOURCE_USERNAME=postgres \
+SPRING_DATASOURCE_PASSWORD=postgres \
+./gradlew bootRun
 ```
 
-Check service is running:
+#### Build the JAR
+
 ```shell
-curl http://localhost:8080
+./gradlew clean build
 ```
 
-Execute the following command to test the application:
+The JAR file will be generated at: `build/libs/assessment-0.0.1-SNAPSHOT.jar`
+
+#### Run the JAR directly
+
 ```shell
-# java 17 in host
+java -jar build/libs/assessment-0.0.1-SNAPSHOT.jar
+```
+
+---
+
+### Running Tests
+
+```shell
+# Local (uses H2 in-memory database)
 ./gradlew test
 
-# using docker
+# Using Docker
 docker run --rm -u gradle -v "$PWD":/home/gradle/project -w /home/gradle/project gradle:8-jdk17 gradle test
+
+# Inside running Docker Compose environment
+docker compose exec app gradle test
 ```
+
+---
+
+### Verify the Application is Running
+
+```shell
+# Health check
+curl http://localhost:8080
+
+# Expected response: ok
+```
+
+---
+
+### Database Seed Data
+
+The `db/init/001_create_pricing.sql` script creates the following parking configurations:
+
+| parking_id | hourly_rate | max_cap | cap_window | first_hour_free |
+|------------|-------------|---------|------------|-----------------|
+| P000123 | 2 EUR | 15 EUR | 24 hours | No |
+| P000456 | 3 EUR | 20 EUR | 12 hours | Yes |
 
 ## Challenge
 
@@ -101,7 +235,31 @@ Requirements:
 
 Example usage:
 ```shell
+curl --location 'http://localhost:8080/tickets/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+    "parkingId": "P000456",
+    "from": "2025-02-27T09:00:00",
+    "to": "2025-02-28T09:10:00"
+}'
+```
+
+Example response:
+```json
+{
+  "parkingId": "P000123",
+  "from": "2024-02-27T09:00:00Z",
+  "to": "2024-02-27T10:00:00Z",
+  "duration": 60,
+  "price": "20EUR"
+}
+```
+
+Error examples:
+```shell
+# invalid date
 curl -X POST http://localhost:8080/tickets/calculate \
   -H "Content-Type: application/json" \
-  -d '{"parkingId":"P000123","from":"2024-02-27T09:00:00"}'
+  -d '{"parkingId":"P000123","from":"bad-date"}'
+# => 400 {"message":"Invalid date format","code":"BAD_REQUEST","status":400}
 ```
