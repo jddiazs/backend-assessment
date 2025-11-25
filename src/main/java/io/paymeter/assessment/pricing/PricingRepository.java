@@ -1,5 +1,7 @@
 package io.paymeter.assessment.pricing;
 
+import java.util.Optional;
+
 public interface PricingRepository {
-    Pricing get(String parkingId);
+    Optional<Pricing> findById(String parkingId);
 }

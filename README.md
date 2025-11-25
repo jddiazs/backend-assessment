@@ -101,7 +101,31 @@ Requirements:
 
 Example usage:
 ```shell
+curl --location 'http://localhost:8080/tickets/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+    "parkingId": "P000456",
+    "from": "2025-02-27T09:00:00",
+    "to": "2025-02-28T09:10:00"
+}'
+```
+
+Example response:
+```json
+{
+  "parkingId": "P000123",
+  "from": "2024-02-27T09:00:00Z",
+  "to": "2024-02-27T10:00:00Z",
+  "duration": 60,
+  "price": "20EUR"
+}
+```
+
+Error examples:
+```shell
+# invalid date
 curl -X POST http://localhost:8080/tickets/calculate \
   -H "Content-Type: application/json" \
-  -d '{"parkingId":"P000123","from":"2024-02-27T09:00:00"}'
+  -d '{"parkingId":"P000123","from":"bad-date"}'
+# => 400 {"message":"Invalid date format","code":"BAD_REQUEST","status":400}
 ```

@@ -1,6 +1,5 @@
 package io.paymeter.assessment.pricing;
 
-import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.Objects;
 
@@ -15,12 +14,20 @@ public class Money {
         this.currency = DEFAULT_CURRENCY;
     }
 
+    public static Money zero() {
+        return new Money(0);
+    }
+
     public int getAmount() {
         return amount;
     }
 
     public String getCurrencyCode() {
         return currency.getCurrencyCode();
+    }
+
+    public String format() {
+        return amount + getCurrencyCode();
     }
 
     @Override
