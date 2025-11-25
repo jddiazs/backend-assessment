@@ -6,6 +6,7 @@ import io.paymeter.assessment.domain.pricing.Money;
 import io.paymeter.assessment.domain.pricing.Pricing;
 import io.paymeter.assessment.domain.pricing.PricingCalculator;
 import io.paymeter.assessment.domain.pricing.PricingRepository;
+import reactor.core.publisher.Mono;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -25,27 +26,25 @@ public class PricingService {
         this.clock = clock;
     }
 
-    public CalculationResult calculate(String parkingId, ZonedDateTime from, ZonedDateTime to) {
+    public Mono<CalculationResult> calculate(String parkingId, ZonedDateTime from, ZonedDateTime to) {
         if (parkingId == null || parkingId.isBlank()) {
-            throw new BadRequestException("parkingId is required");
+            return Mono.error(new BadRequestException("parkingId is required"));
         }
         if (from == null) {
-            throw new BadRequestException("from is required");
+            return Mono.error(new BadRequestException("from is required"));
         }
-        if (to == null) {
-            to = ZonedDateTime.now(clock);
-        }
-        if (to.isBefore(from)) {
-            throw new BadRequestException("`to` must be after `from`");
+        ZonedDateTime toOrNow = to != null ? to : ZonedDateTime.now(clock);
+        if (toOrNow.isBefore(from)) {
+            return Mono.error(new BadRequestException("`to` must be after `from`"));
         }
 
-        Pricing pricing = pricingRepository.findById(parkingId)
-                .orElseThrow(() -> new NotFoundException("Parking not found"));
-
-        long durationMinutes = Duration.between(from, to).toMinutes();
-        Money price = pricingCalculator.calculate(pricing, from, to);
-
-        return new CalculationResult(parkingId, from, to, durationMinutes, price);
+        return pricingRepository.findById(parkingId)
+                .switchIfEmpty(Mono.error(new NotFoundException("Parking not found")))
+                .map(pricing -> {
+                    long durationMinutes = Duration.between(from, toOrNow).toMinutes();
+                    Money price = pricingCalculator.calculate(pricing, from, toOrNow);
+                    return new CalculationResult(parkingId, from, toOrNow, durationMinutes, price);
+                });
     }
 
     public static class CalculationResult {

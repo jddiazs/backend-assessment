@@ -4,13 +4,14 @@ import io.paymeter.assessment.application.pricing.PricingService;
 import io.paymeter.assessment.domain.pricing.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -18,19 +19,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
-import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = TicketController.class)
+@WebFluxTest(controllers = TicketController.class)
 @Import({ApiExceptionHandler.class, TicketControllerTest.FixedClockConfig.class})
 class TicketControllerTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @MockBean
     private PricingService pricingService;
@@ -56,7 +54,7 @@ class TicketControllerTest {
                 60,
                 new Money(200)
         );
-        when(pricingService.calculate(eq("P000123"), eq(fromDate), eq(toDate))).thenReturn(result);
+        when(pricingService.calculate(eq("P000123"), eq(fromDate), isNull())).thenReturn(Mono.just(result));
 
         String body = """
                 {
@@ -65,15 +63,18 @@ class TicketControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/tickets/calculate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.parkingId").value("P000123"))
-                .andExpect(jsonPath("$.from", startsWith("2024-02-27T09:00:00")))
-                .andExpect(jsonPath("$.to", startsWith("2024-02-27T10:00:00")))
-                .andExpect(jsonPath("$.duration").value(60))
-                .andExpect(jsonPath("$.price").value("200EUR"));
+        webTestClient.post()
+                .uri("/tickets/calculate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.parkingId").isEqualTo("P000123")
+                .jsonPath("$.from").value(org.hamcrest.Matchers.startsWith("2024-02-27T09:00"))
+                .jsonPath("$.to").value(org.hamcrest.Matchers.startsWith("2024-02-27T10:00"))
+                .jsonPath("$.duration").isEqualTo(60)
+                .jsonPath("$.price").isEqualTo("200EUR");
     }
 
     @Test
@@ -85,10 +86,13 @@ class TicketControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/tickets/calculate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        webTestClient.post()
+                .uri("/tickets/calculate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.code").isEqualTo("BAD_REQUEST");
     }
 }

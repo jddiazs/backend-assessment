@@ -8,6 +8,8 @@ import io.paymeter.assessment.domain.pricing.PricingCalculator;
 import io.paymeter.assessment.domain.pricing.PricingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -26,7 +28,7 @@ class PricingServiceTest {
 
     @BeforeEach
     void setUp() {
-        PricingRepository repository = parkingId -> "P000123".equals(parkingId) ? Optional.of(PRICING) : Optional.empty();
+        PricingRepository repository = parkingId -> "P000123".equals(parkingId) ? Mono.just(PRICING) : Mono.empty();
         pricingService = new PricingService(repository, new PricingCalculator(), Clock.fixed(Instant.parse("2024-02-27T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -34,11 +36,13 @@ class PricingServiceTest {
     void shouldDefaultToCurrentClockWhenToIsNull() {
         ZonedDateTime from = ZonedDateTime.ofInstant(Instant.parse("2024-02-27T09:00:00Z"), ZoneOffset.UTC);
 
-        PricingService.CalculationResult result = pricingService.calculate("P000123", from, null);
-
-        assertEquals(ZonedDateTime.ofInstant(Instant.parse("2024-02-27T10:00:00Z"), ZoneOffset.UTC), result.getTo());
-        assertEquals(60, result.getDurationMinutes());
-        assertEquals(new Money(200), result.getPrice());
+        StepVerifier.create(pricingService.calculate("P000123", from, null))
+                .assertNext(result -> {
+                    assertEquals(ZonedDateTime.ofInstant(Instant.parse("2024-02-27T10:00:00Z"), ZoneOffset.UTC), result.getTo());
+                    assertEquals(60, result.getDurationMinutes());
+                    assertEquals(new Money(200), result.getPrice());
+                })
+                .verifyComplete();
     }
 
     @Test
@@ -46,7 +50,9 @@ class PricingServiceTest {
         ZonedDateTime from = ZonedDateTime.ofInstant(Instant.parse("2024-02-27T09:00:00Z"), ZoneOffset.UTC);
         ZonedDateTime to = from.plusHours(1);
 
-        assertThrows(NotFoundException.class, () -> pricingService.calculate("UNKNOWN", from, to));
+        StepVerifier.create(pricingService.calculate("UNKNOWN", from, to))
+                .expectError(NotFoundException.class)
+                .verify();
     }
 
     @Test
@@ -54,6 +60,8 @@ class PricingServiceTest {
         ZonedDateTime from = ZonedDateTime.ofInstant(Instant.parse("2024-02-27T10:00:00Z"), ZoneOffset.UTC);
         ZonedDateTime to = from.minusHours(1);
 
-        assertThrows(BadRequestException.class, () -> pricingService.calculate("P000123", from, to));
+        StepVerifier.create(pricingService.calculate("P000123", from, to))
+                .expectError(BadRequestException.class)
+                .verify();
     }
 }

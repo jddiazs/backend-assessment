@@ -2,9 +2,9 @@ package io.paymeter.assessment.infrastructure.persistence.pricing;
 
 import io.paymeter.assessment.domain.pricing.Pricing;
 import io.paymeter.assessment.domain.pricing.PricingRepository;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
-import java.util.Optional;
 
 public class InMemoryPricingRepository implements PricingRepository {
     private static final String PARKING_DAILY_CAP = "P000123";
@@ -16,7 +16,7 @@ public class InMemoryPricingRepository implements PricingRepository {
     );
 
     @Override
-    public Optional<Pricing> findById(String parkingId) {
-        return Optional.ofNullable(pricingByParking.get(parkingId));
+    public Mono<Pricing> findById(String parkingId) {
+        return Mono.justOrEmpty(pricingByParking.get(parkingId));
     }
 }

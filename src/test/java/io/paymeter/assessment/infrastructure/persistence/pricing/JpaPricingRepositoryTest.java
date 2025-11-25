@@ -6,15 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
-
-import java.util.Optional;
-
+import reactor.test.StepVerifier;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @Import(JpaPricingRepository.class)
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class JpaPricingRepositoryTest {
 
     @Autowired
@@ -26,20 +26,19 @@ class JpaPricingRepositoryTest {
             "INSERT INTO pricing (parking_id, hourly_rate_in_cents, cap_in_cents, first_hour_free, cap_window_hours) VALUES ('P000456', 300, 2000, TRUE, 12);"
     })
     void shouldFindPricingByParkingId() {
-        Optional<Pricing> result = pricingRepository.findById("P000123");
-
-        assertTrue(result.isPresent());
-        Pricing pricing = result.orElseThrow();
-        assertEquals(200, pricing.getHourlyRateInCents());
-        assertEquals(1500, pricing.getCapInCents());
-        assertEquals(24, pricing.getCapWindowHours());
-        assertFalse(pricing.isFirstHourFree());
+        StepVerifier.create(pricingRepository.findById("P000123"))
+                .assertNext(pricing -> {
+                    assertEquals(200, pricing.getHourlyRateInCents());
+                    assertEquals(1500, pricing.getCapInCents());
+                    assertEquals(24, pricing.getCapWindowHours());
+                    assertFalse(pricing.isFirstHourFree());
+                })
+                .verifyComplete();
     }
 
     @Test
     void shouldReturnEmptyWhenParkingIdDoesNotExist() {
-        Optional<Pricing> result = pricingRepository.findById("UNKNOWN");
-
-        assertTrue(result.isEmpty());
+        StepVerifier.create(pricingRepository.findById("UNKNOWN"))
+                .verifyComplete();
     }
 }

@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/tickets")
@@ -34,22 +37,33 @@ public class TicketController {
             @ApiResponse(responseCode = "404", description = "Parking not found", content = @Content(schema = @Schema(implementation = NotFoundException.class))),
             @ApiResponse(responseCode = "500", description = "Server error", content = @Content(schema = @Schema(implementation = RuntimeException.class)))
     })
-    public TicketResponse calculate(@Valid @RequestBody TicketRequest request) {
+    public Mono<TicketResponse> calculate(@Valid @RequestBody TicketRequest request) {
         try {
-            ZonedDateTime from = request.getFrom() != null ? ZonedDateTime.parse(request.getFrom()) : null;
-            ZonedDateTime to = request.getTo() != null ? ZonedDateTime.parse(request.getTo()) : null;
+            ZonedDateTime from = parseDate(request.getFrom());
+            ZonedDateTime to = request.getTo() != null ? parseDate(request.getTo()) : null;
 
-            PricingService.CalculationResult result = pricingService.calculate(request.getParkingId(), from, to);
-
-            return new TicketResponse(
-                    result.getParkingId(),
-                    result.getFrom().toString(),
-                    result.getTo().toString(),
-                    result.getDurationMinutes(),
-                    result.getPrice().format()
-            );
+            return pricingService.calculate(request.getParkingId(), from, to)
+                    .map(result -> new TicketResponse(
+                            result.getParkingId(),
+                            result.getFrom().toString(),
+                            result.getTo().toString(),
+                            result.getDurationMinutes(),
+                            result.getPrice().format()
+                    ));
         } catch (DateTimeParseException e) {
             throw new TicketBadRequestException("Invalid date format");
+        }
+    }
+
+    private ZonedDateTime parseDate(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return ZonedDateTime.parse(value);
+        } catch (DateTimeParseException ex) {
+            // Fallback to UTC when input omits offset
+            return ZonedDateTime.of(LocalDateTime.parse(value), ZoneOffset.UTC);
         }
     }
 

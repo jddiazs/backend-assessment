@@ -5,6 +5,8 @@ import io.paymeter.assessment.domain.pricing.PricingCalculator;
 import io.paymeter.assessment.domain.pricing.PricingRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Clock;
 
@@ -26,5 +28,10 @@ public class Config {
                                          PricingCalculator pricingCalculator,
                                          Clock clock) {
         return new PricingService(pricingRepository, pricingCalculator, clock);
+    }
+
+    @Bean
+    public Scheduler elasticScheduler() {
+        return Schedulers.boundedElastic();
     }
 }
