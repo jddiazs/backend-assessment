@@ -22,6 +22,19 @@ dependencies {
 	testImplementation 'io.projectreactor:reactor-test'
 	testRuntimeOnly 'com.h2database:h2'
 	implementation 'io.swagger.core.v3:swagger-annotations:2.2.40'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	testCompileOnly 'org.projectlombok:lombok:1.18.30'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+	// SpringDoc OpenAPI (WebFlux)
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0'
+
+	// Spring Security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	testImplementation 'org.springframework.security:spring-security-test'
 }
 
 test {

@@ -2,8 +2,12 @@ package io.paymeter.assessment.infrastructure.web.parking;
 
 import io.paymeter.assessment.application.shared.BadRequestException;
 import io.paymeter.assessment.application.shared.NotFoundException;
+import io.paymeter.assessment.infrastructure.web.parking.dto.ErrorResponse;
+import io.paymeter.assessment.infrastructure.web.parking.exception.TicketBadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,6 +17,16 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        return buildResponse("Authentication required", "UNAUTHORIZED", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return buildResponse("Access denied", "FORBIDDEN", HttpStatus.FORBIDDEN);
+    }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
@@ -32,8 +46,8 @@ public class ApiExceptionHandler {
         return buildResponse(message, "BAD_REQUEST", HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(TicketController.TicketBadRequestException.class)
-    public ResponseEntity<ErrorResponse> handleParsingError(TicketController.TicketBadRequestException ex) {
+    @ExceptionHandler(TicketBadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleParsingError(TicketBadRequestException ex) {
         return buildResponse(ex.getMessage(), "BAD_REQUEST", HttpStatus.BAD_REQUEST);
     }
 
@@ -45,35 +59,5 @@ public class ApiExceptionHandler {
     private ResponseEntity<ErrorResponse> buildResponse(String message, String code, HttpStatus status) {
         ErrorResponse body = new ErrorResponse(message, code, status.value(), Instant.now().toString());
         return ResponseEntity.status(status).body(body);
-    }
-
-    public static class ErrorResponse {
-        private final String message;
-        private final String code;
-        private final int status;
-        private final String timestamp;
-
-        public ErrorResponse(String message, String code, int status, String timestamp) {
-            this.message = message;
-            this.code = code;
-            this.status = status;
-            this.timestamp = timestamp;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public int getStatus() {
-            return status;
-        }
-
-        public String getTimestamp() {
-            return timestamp;
-        }
     }
 }

@@ -1,7 +1,9 @@
 package io.paymeter.assessment.infrastructure.web.parking;
 
 import io.paymeter.assessment.application.pricing.PricingService;
+import io.paymeter.assessment.application.pricing.dto.CalculationResult;
 import io.paymeter.assessment.domain.pricing.Money;
+import io.paymeter.assessment.infrastructure.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -10,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -24,7 +27,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 @WebFluxTest(controllers = TicketController.class)
-@Import({ApiExceptionHandler.class, TicketControllerTest.FixedClockConfig.class})
+@Import({ApiExceptionHandler.class, SecurityConfig.class, TicketControllerTest.FixedClockConfig.class})
 class TicketControllerTest {
 
     @Autowired
@@ -42,12 +45,13 @@ class TicketControllerTest {
     }
 
     @Test
-    void shouldCalculateWithDefaultToWhenNotProvided() throws Exception {
+    @WithMockUser(username = "user", roles = "USER")
+    void shouldCalculateWithDefaultToWhenNotProvided() {
         String from = "2024-02-27T09:00:00";
         ZonedDateTime fromDate = ZonedDateTime.of(LocalDateTime.parse(from), ZoneOffset.UTC);
         ZonedDateTime toDate = ZonedDateTime.ofInstant(Instant.parse("2024-02-27T10:00:00Z"), ZoneOffset.UTC);
 
-        PricingService.CalculationResult result = new PricingService.CalculationResult(
+        CalculationResult result = new CalculationResult(
                 "P000123",
                 fromDate,
                 toDate,
@@ -78,7 +82,8 @@ class TicketControllerTest {
     }
 
     @Test
-    void shouldReturnBadRequestForInvalidDate() throws Exception {
+    @WithMockUser(username = "user", roles = "USER")
+    void shouldReturnBadRequestForInvalidDate() {
         String body = """
                 {
                   "parkingId": "P000123",
@@ -94,5 +99,22 @@ class TicketControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.code").isEqualTo("BAD_REQUEST");
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWithoutCredentials() {
+        String body = """
+                {
+                  "parkingId": "P000123",
+                  "from": "2024-02-27T09:00:00"
+                }
+                """;
+
+        webTestClient.post()
+                .uri("/tickets/calculate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 }
