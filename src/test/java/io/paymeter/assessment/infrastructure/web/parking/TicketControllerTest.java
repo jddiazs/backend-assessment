@@ -102,7 +102,20 @@ class TicketControllerTest {
     }
 
     @Test
-    void shouldReturnUnauthorizedWithoutCredentials() {
+    void shouldAllowAccessWithoutCredentials() {
+        String from = "2024-02-27T09:00:00";
+        ZonedDateTime fromDate = ZonedDateTime.of(LocalDateTime.parse(from), ZoneOffset.UTC);
+        ZonedDateTime toDate = ZonedDateTime.ofInstant(Instant.parse("2024-02-27T10:00:00Z"), ZoneOffset.UTC);
+
+        CalculationResult result = new CalculationResult(
+                "P000123",
+                fromDate,
+                toDate,
+                60,
+                new Money(200)
+        );
+        when(pricingService.calculate(eq("P000123"), eq(fromDate), isNull())).thenReturn(Mono.just(result));
+
         String body = """
                 {
                   "parkingId": "P000123",
@@ -115,6 +128,8 @@ class TicketControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.parkingId").isEqualTo("P000123");
     }
 }
